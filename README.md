@@ -19,3 +19,8 @@ Learn all about Windows 365 solution presents as an innovative disruptive techno
 
 * How to Break Free from Traditional VDI with Windows 365:
 [aka.ms/W365break-freeVDI](https://aka.ms/W365break-freeVDI)
+
+## For Windows 365 Scripts (for Healthcare)
+
+If you're looking for Windows 365 Scripts for Healthcare, we have another repo:
+[Windows365-PSScripts](https://github.com/Neckross/Windows365-PSScripts)

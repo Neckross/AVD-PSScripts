@@ -14,4 +14,7 @@ For AVD environments, is usefull to add some visibility around the device inform
 
 ## Using this solution
 Installing BGInfo extension can take a few minutes, grab a cup of coffee and let it run.
+
 > Note: The scripts are not signed. If your organization is blocking the execution of unsigned scripts, they will not run.
+
+> Note: Download script and run it from an azure cloud shell or local PS session.

@@ -1,5 +1,5 @@
 #==================================================================================================================================#
-# Version     = 0.2
+# Version     = 0.3
 # Script Name = AVD - Detection script for FSLogix (Standard setup).ps1
 # Description = This is a detection script to check registry keys exist on AVD Host Pools Multi-session for FSLogix Standard setup.
 # Notes       = Variable changes needed ($VHDLocations)
@@ -26,8 +26,8 @@ function Write-Log {
 }
 
 # Define the registry paths
-$fsLogixProfilesRegPath = "HKLM:\SOFTWARE\FSLogix\Profiles"
-$kerberosRegPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters"
+$fsLogixProfilesRegPath = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\FSLogix\Profiles"
+$kerberosRegPath = "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters"
 
 # Define the Storage Account UNC Path value (Update this before running the script)
 $VHDLocations = "\\storage-account-name.file.core.windows.net\share-name"
@@ -45,7 +45,7 @@ if ($wmiService.Status -ne 'Running') {
 Write-Log "Azure VM WMI service is running. Proceeding with detection."
 
 # Ensure the device is an AVD Host (Check RDInfraAgent)
-$avdKey = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\RDInfraAgent" -ErrorAction SilentlyContinue
+$avdKey = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\RDInfraAgent" -ErrorAction SilentlyContinue
 if (-not $avdKey) {
   Write-Log "This device is not an AVD Host. Exiting script."
   Exit 0

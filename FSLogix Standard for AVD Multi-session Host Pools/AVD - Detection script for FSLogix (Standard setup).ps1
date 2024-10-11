@@ -1,5 +1,5 @@
 #==================================================================================================================================#
-# Version     = 0.1
+# Version     = 0.2
 # Script Name = AVD - Detection script for FSLogix (Standard setup).ps1
 # Description = This is a detection script to check registry keys exist on AVD Host Pools Multi-session for FSLogix Standard setup.
 # Notes       = Variable changes needed ($VHDLocations)
@@ -44,12 +44,14 @@ if ($wmiService.Status -ne 'Running') {
 
 Write-Log "Azure VM WMI service is running. Proceeding with detection."
 
-# Ensure the device is an AVD Host (RDInfraAgent check)
-$avdKey = "HKLM:\SOFTWARE\Microsoft\RDInfraAgent"
-if (-not (Test-Path -Path $avdKey)) {
+# Ensure the device is an AVD Host (Check RDInfraAgent)
+$avdKey = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\RDInfraAgent" -ErrorAction SilentlyContinue
+if (-not $avdKey) {
   Write-Log "This device is not an AVD Host. Exiting script."
   Exit 0
 }
+
+Write-Log "Device is confirmed as an AVD Host."
 
 # Ensure the device is an AVD Multi-Session (Windows SKU 175 = Multi-Session)
 $windowsSKU = (Get-WmiObject -Class Win32_OperatingSystem).OperatingSystemSKU

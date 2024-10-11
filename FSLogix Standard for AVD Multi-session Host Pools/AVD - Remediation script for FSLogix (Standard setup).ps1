@@ -1,5 +1,5 @@
 #===========================================================================================================================#
-# Version     = 0.1
+# Version     = 0.2
 # Script Name = AVD - Remediation script for FSLogix (Standard setup).ps1
 # Description = This is a remediation script to set registry keys on AVD Host Pools Multi-session for FSLogix Standard setup.
 # Notes       = Variable changes needed ($VHDLocations)
@@ -44,12 +44,14 @@ if ($wmiService.Status -ne 'Running') {
 
 Write-Log "Azure VM WMI service is running. Proceeding with remediation."
 
-# Ensure the device is an AVD Host (RDInfraAgent check)
-$avdKey = "HKLM:\SOFTWARE\Microsoft\RDInfraAgent"
-if (-not (Test-Path -Path $avdKey)) {
+# Ensure the device is an AVD Host (Check RDInfraAgent)
+$avdKey = Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\RDInfraAgent" -ErrorAction SilentlyContinue
+if (-not $avdKey) {
   Write-Log "This device is not an AVD Host. Exiting script."
   Exit 0
 }
+
+Write-Log "Device is confirmed as an AVD Host."
 
 # Ensure the device is an AVD Multi-Session (Windows SKU 175 = Multi-Session)
 $windowsSKU = (Get-WmiObject -Class Win32_OperatingSystem).OperatingSystemSKU
@@ -88,8 +90,7 @@ function Set-RegistryKey {
   param (
     [string]$path,
     [string]$keyName,
-    [string]$value,
-    [string]$type
+    [string]$value
   )
 
   try {
@@ -104,13 +105,13 @@ function Set-RegistryKey {
 # Apply the correct FSLogix Profile values
 Write-Log "Remediating FSLogix Profile registry keys."
 foreach ($key in $expectedValues.Keys) {
-  Set-RegistryKey -path $fsLogixProfilesRegPath -keyName $key -value $expectedValues[$key] -type "Dword"
+  Set-RegistryKey -path $fsLogixProfilesRegPath -keyName $key -value $expectedValues[$key]
 }
 
-# Apply the Kerberos value
+# Apply the Kerberos values
 Write-Log "Remediating Kerberos registry keys."
 foreach ($key in $kerberosExpectedValues.Keys) {
-  Set-RegistryKey -path $kerberosRegPath -keyName $key -value $kerberosExpectedValues[$key] -type "Dword"
+  Set-RegistryKey -path $kerberosRegPath -keyName $key -value $kerberosExpectedValues[$key]
 }
 
 # Verify remediation

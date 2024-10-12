@@ -1,5 +1,5 @@
 #==================================================================================================================================#
-# Version     = 0.8
+# Version     = 0.10
 # Script Name = AVD - Detection script for FSLogix (Standard setup).ps1
 # Description = This is a detection script to check registry keys exist on AVD Host Pools Multi-session for FSLogix Standard setup.
 # Notes       = Variable changes needed ($VHDLocations)
@@ -79,8 +79,6 @@ $expectedValues = @{
   "VHDLocations"                         = $VHDLocations
   "VolumeType"                           = "VHDX"
   "IsDynamic"                            = 1
-  "SIDDirNamePattern"                    = "%username%%sid%"
-  "SIDDirNameMatch"                      = "%username%%sid%"
 }
 
 # Kerberos registry key expected values

@@ -1,5 +1,5 @@
 #==================================================================================================================================#
-# Version     = 0.3
+# Version     = 0.8
 # Script Name = AVD - Detection script for FSLogix (Standard setup).ps1
 # Description = This is a detection script to check registry keys exist on AVD Host Pools Multi-session for FSLogix Standard setup.
 # Notes       = Variable changes needed ($VHDLocations)
@@ -25,6 +25,10 @@ function Write-Log {
   $logEntry | Out-File -FilePath $logFile -Append
 }
 
+# Ensure Logging of User/Device Context
+$currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent().Name
+Write-Log "Running as: $currentUser"
+
 # Define the registry paths
 $fsLogixProfilesRegPath = "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\FSLogix\Profiles"
 $kerberosRegPath = "Registry::HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Control\Lsa\Kerberos\Parameters"
@@ -44,15 +48,6 @@ if ($wmiService.Status -ne 'Running') {
 
 Write-Log "Azure VM WMI service is running. Proceeding with detection."
 
-# Ensure the device is an AVD Host (Check RDInfraAgent)
-$avdKey = Get-ItemProperty -Path "Registry::HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\RDInfraAgent" -ErrorAction SilentlyContinue
-if (-not $avdKey) {
-  Write-Log "This device is not an AVD Host. Exiting script."
-  Exit 0
-}
-
-Write-Log "Device is confirmed as an AVD Host."
-
 # Ensure the device is an AVD Multi-Session (Windows SKU 175 = Multi-Session)
 $windowsSKU = (Get-WmiObject -Class Win32_OperatingSystem).OperatingSystemSKU
 if ($windowsSKU -ne 175) {
@@ -61,6 +56,14 @@ if ($windowsSKU -ne 175) {
 }
 
 Write-Log "Device is confirmed as an AVD Multi-Session host."
+
+# Check if FSLogix Profiles registry path exists
+if (-not (Test-Path -Path $fsLogixProfilesRegPath)) {
+  Write-Log "FSLogix Profiles registry path does not exist. Exiting script."
+  Exit 1
+}
+
+Write-Log "FSLogix Profiles registry path exists."
 
 # Define expected values
 $expectedValues = @{

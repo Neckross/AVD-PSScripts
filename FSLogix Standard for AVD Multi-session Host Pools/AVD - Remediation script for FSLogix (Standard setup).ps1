@@ -1,5 +1,5 @@
 #===========================================================================================================================#
-# Version     = 0.10
+# Version     = 0.11
 # Script Name = AVD - Remediation script for FSLogix (Standard setup).ps1
 # Description = This is a remediation script to set registry keys on AVD Host Pools Multi-session for FSLogix Standard setup.
 # Notes       = Variable changes needed ($VHDLocations)
@@ -104,6 +104,11 @@ function Set-RegistryKey {
   }
 
   try {
+    if (-not (Test-Path -Path $path)) {
+      New-Item -Path $path -Force | Out-Null
+      Write-Log "Created registry path: $path"
+    }
+
     if (-not (Get-ItemProperty -Path $path -Name $keyName -ErrorAction SilentlyContinue)) {
       # Create the registry key if it doesn't exist
       New-ItemProperty -Path $path -Name $keyName -Value $value -PropertyType $propertyType -Force | Out-Null

@@ -1,5 +1,5 @@
 #==================================================================================================================================#
-# Version     = 0.10
+# Version     = 0.11
 # Script Name = AVD - Detection script for FSLogix (Standard setup).ps1
 # Description = This is a detection script to check registry keys exist on AVD Host Pools Multi-session for FSLogix Standard setup.
 # Notes       = Variable changes needed ($VHDLocations)

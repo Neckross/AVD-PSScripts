@@ -7,7 +7,7 @@ Most commonly used in AVD Multi-session host pools to allow user profile roaming
 FSLogix has different deployment options (eg. Intune, Azure VM script extension, GPOs, etc..).
 FSLogix has different configurations (eg. Standard, HA, DR, etc..), this solution is focused on Standard configuration.
 
-> IMPORTANT: you must have configured the Storage Account as part of FSLogix documentation
+> IMPORTANT: you MUST have configured the Storage Account as part of FSLogix documentation
 
 * FSLogix documentation:
 [Click Here](https://learn.microsoft.com/en-us/fslogix/overview-what-is-fslogix)
@@ -15,7 +15,7 @@ FSLogix has different configurations (eg. Standard, HA, DR, etc..), this solutio
 * FSLogix Standard (+ other Configurations):
 [Click Here](https://learn.microsoft.com/en-us/fslogix/concepts-configuration-examples#example-1-standard)
 
-* Intune Setting Catalog (FSLogix):
+* [Optional] Intune Setting Catalog (FSLogix):
 [Click Here](https://learn.microsoft.com/en-us/fslogix/reference-configuration-settings?tabs=profiles)
 
 * FSLogix deployment options:

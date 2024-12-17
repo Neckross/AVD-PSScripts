@@ -1,5 +1,5 @@
 #===========================================================================================================================#
-# Version     = 0.11
+# Version     = 0.12
 # Script Name = AVD - Remediation script for FSLogix (Standard setup).ps1
 # Description = This is a remediation script to set registry keys on AVD Host Pools Multi-session for FSLogix Standard setup.
 # Notes       = Variable changes needed ($VHDLocations)
@@ -57,36 +57,7 @@ if ($windowsSKU -ne 175) {
 
 Write-Log "Device is confirmed as an AVD Multi-Session host."
 
-# Check if FSLogix Profiles registry path exists
-if (-not (Test-Path -Path $fsLogixProfilesRegPath)) {
-  Write-Log "FSLogix Profiles registry path does not exist. Exiting script."
-  Exit 1
-}
-
-Write-Log "FSLogix Profiles registry path exists."
-
-# Define expected FSLogix Profile values
-$expectedValues = @{
-  "Enabled"                              = 1
-  "DeleteLocalProfileWhenVHDShouldApply" = 1
-  "FlipFlopProfileDirectoryName"         = 1
-  "LockedRetryCount"                     = 3
-  "LockedRetryInterval"                  = 15
-  "ProfileType"                          = 0
-  "ReAttachIntervalSeconds"              = 15
-  "ReAttachRetryCount"                   = 3
-  "SizeInMBs"                            = 30000
-  "VHDLocations"                         = $VHDLocations
-  "VolumeType"                           = "VHDX"
-  "IsDynamic"                            = 1
-}
-
-# Kerberos registry key expected values
-$kerberosExpectedValues = @{
-  "CloudKerberosTicketRetrievalEnabled" = 1
-}
-
-# Function to set or create registry keys with appropriate property types
+# Function to create or update registry keys
 function Set-RegistryKey {
   param (
     [string]$path,
@@ -104,20 +75,24 @@ function Set-RegistryKey {
   }
 
   try {
+    # Check and create the registry path if it doesn't exist
     if (-not (Test-Path -Path $path)) {
       New-Item -Path $path -Force | Out-Null
       Write-Log "Created registry path: $path"
     }
 
-    if (-not (Get-ItemProperty -Path $path -Name $keyName -ErrorAction SilentlyContinue)) {
-      # Create the registry key if it doesn't exist
+    # Check if the registry key exists and create/update its value
+    $actualValue = (Get-ItemProperty -Path $path -ErrorAction SilentlyContinue | Select-Object -ExpandProperty $keyName -ErrorAction SilentlyContinue)
+    if ($null -eq $actualValue) {
       New-ItemProperty -Path $path -Name $keyName -Value $value -PropertyType $propertyType -Force | Out-Null
       Write-Log "Created $keyName with value $value at $path."
     }
-    else {
-      # Update the registry key if it exists
+    elseif ($actualValue -ne $value) {
       Set-ItemProperty -Path $path -Name $keyName -Value $value -Force
       Write-Log "Updated $keyName to $value at $path."
+    }
+    else {
+      Write-Log "$keyName is already set to the correct value at $path."
     }
   }
   catch {
@@ -125,16 +100,37 @@ function Set-RegistryKey {
   }
 }
 
-# Apply the correct FSLogix Profile values
+# Define expected FSLogix Profile values
+$expectedValues = @(
+  @{ KeyName = "Enabled"; Value = 1 },
+  @{ KeyName = "DeleteLocalProfileWhenVHDShouldApply"; Value = 1 },
+  @{ KeyName = "FlipFlopProfileDirectoryName"; Value = 1 },
+  @{ KeyName = "LockedRetryCount"; Value = 3 },
+  @{ KeyName = "LockedRetryInterval"; Value = 15 },
+  @{ KeyName = "ProfileType"; Value = 0 },
+  @{ KeyName = "ReAttachIntervalSeconds"; Value = 15 },
+  @{ KeyName = "ReAttachRetryCount"; Value = 3 },
+  @{ KeyName = "SizeInMBs"; Value = 30000 },
+  @{ KeyName = "VHDLocations"; Value = $VHDLocations },
+  @{ KeyName = "VolumeType"; Value = "VHDX" },
+  @{ KeyName = "IsDynamic"; Value = 1 }
+)
+
+# Kerberos registry key expected values
+$kerberosExpectedValues = @(
+  @{ KeyName = "CloudKerberosTicketRetrievalEnabled"; Value = 1 }
+)
+
+# Apply FSLogix Profile registry keys
 Write-Log "Remediating FSLogix Profile registry keys."
-foreach ($key in $expectedValues.Keys) {
-  Set-RegistryKey -path $fsLogixProfilesRegPath -keyName $key -value $expectedValues[$key]
+foreach ($entry in $expectedValues) {
+  Set-RegistryKey -path $fsLogixProfilesRegPath -keyName $entry.KeyName -value $entry.Value
 }
 
-# Apply the Kerberos values
+# Apply Kerberos registry keys
 Write-Log "Remediating Kerberos registry keys."
-foreach ($key in $kerberosExpectedValues.Keys) {
-  Set-RegistryKey -path $kerberosRegPath -keyName $key -value $kerberosExpectedValues[$key]
+foreach ($entry in $kerberosExpectedValues) {
+  Set-RegistryKey -path $kerberosRegPath -keyName $entry.KeyName -value $entry.Value
 }
 
 # Verify remediation

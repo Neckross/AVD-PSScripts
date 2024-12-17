@@ -1,9 +1,9 @@
-#==================================================================================================================================#
-# Version     = 0.11
+#===========================================================================================================================#
+# Version     = 0.12
 # Script Name = AVD - Detection script for FSLogix (Standard setup).ps1
 # Description = This is a detection script to check registry keys exist on AVD Host Pools Multi-session for FSLogix Standard setup.
 # Notes       = Variable changes needed ($VHDLocations)
-#==================================================================================================================================#
+#===========================================================================================================================#
 
 # Define the log file location
 $logFolder = "C:\Temp"
@@ -57,36 +57,28 @@ if ($windowsSKU -ne 175) {
 
 Write-Log "Device is confirmed as an AVD Multi-Session host."
 
-# Check if FSLogix Profiles registry path exists
-if (-not (Test-Path -Path $fsLogixProfilesRegPath)) {
-  Write-Log "FSLogix Profiles registry path does not exist. Exiting script."
-  Exit 1
-}
-
-Write-Log "FSLogix Profiles registry path exists."
-
-# Define expected values
-$expectedValues = @{
-  "Enabled"                              = 1
-  "DeleteLocalProfileWhenVHDShouldApply" = 1
-  "FlipFlopProfileDirectoryName"         = 1
-  "LockedRetryCount"                     = 3
-  "LockedRetryInterval"                  = 15
-  "ProfileType"                          = 0
-  "ReAttachIntervalSeconds"              = 15
-  "ReAttachRetryCount"                   = 3
-  "SizeInMBs"                            = 30000
-  "VHDLocations"                         = $VHDLocations
-  "VolumeType"                           = "VHDX"
-  "IsDynamic"                            = 1
-}
+# Define expected FSLogix Profile values
+$expectedValues = @(
+  @{ KeyName = "Enabled"; Value = 1 },
+  @{ KeyName = "DeleteLocalProfileWhenVHDShouldApply"; Value = 1 },
+  @{ KeyName = "FlipFlopProfileDirectoryName"; Value = 1 },
+  @{ KeyName = "LockedRetryCount"; Value = 3 },
+  @{ KeyName = "LockedRetryInterval"; Value = 15 },
+  @{ KeyName = "ProfileType"; Value = 0 },
+  @{ KeyName = "ReAttachIntervalSeconds"; Value = 15 },
+  @{ KeyName = "ReAttachRetryCount"; Value = 3 },
+  @{ KeyName = "SizeInMBs"; Value = 30000 },
+  @{ KeyName = "VHDLocations"; Value = $VHDLocations },
+  @{ KeyName = "VolumeType"; Value = "VHDX" },
+  @{ KeyName = "IsDynamic"; Value = 1 }
+)
 
 # Kerberos registry key expected values
-$kerberosExpectedValues = @{
-  "CloudKerberosTicketRetrievalEnabled" = 1
-}
+$kerberosExpectedValues = @(
+  @{ KeyName = "CloudKerberosTicketRetrievalEnabled"; Value = 1 }
+)
 
-# Function to check if registry key exists and matches expected value
+# Function to check if a registry path and key exist and match the expected value
 function Check-RegistryKey {
   param (
     [string]$path,
@@ -94,8 +86,21 @@ function Check-RegistryKey {
     [string]$expectedValue
   )
 
-  $actualValue = Get-ItemProperty -Path $path -Name $keyName -ErrorAction SilentlyContinue | Select-Object -ExpandProperty $keyName
+  # Check if the registry path exists
+  if (-not (Test-Path -Path $path)) {
+    Write-Log "Registry path missing: $path"
+    return $false
+  }
 
+  # Check if the registry key exists
+  $actualValue = (Get-ItemProperty -Path $path -ErrorAction SilentlyContinue | Select-Object -ExpandProperty $keyName -ErrorAction SilentlyContinue)
+
+  if ($null -eq $actualValue) {
+    Write-Log "Registry key missing: $keyName at $path"
+    return $false
+  }
+
+  # Check if the value matches
   if ($actualValue -ne $expectedValue) {
     Write-Log "Mismatch found: $keyName has a value of $actualValue, expected $expectedValue."
     return $false
@@ -109,23 +114,23 @@ function Check-RegistryKey {
 # Initialize a flag to track if remediation is needed
 $remediationNeeded = $false
 
-# Check FSLogix Profile registry keys
+# Check FSLogix Profiles registry keys
 Write-Log "Checking FSLogix Profile registry keys."
-foreach ($key in $expectedValues.Keys) {
-  if (-not (Check-RegistryKey -path $fsLogixProfilesRegPath -keyName $key -expectedValue $expectedValues[$key])) {
+foreach ($entry in $expectedValues) {
+  if (-not (Check-RegistryKey -path $fsLogixProfilesRegPath -keyName $entry.KeyName -expectedValue $entry.Value)) {
     $remediationNeeded = $true
   }
 }
 
-# Check Kerberos registry key
+# Check Kerberos registry keys
 Write-Log "Checking Kerberos registry keys."
-foreach ($key in $kerberosExpectedValues.Keys) {
-  if (-not (Check-RegistryKey -path $kerberosRegPath -keyName $key -expectedValue $kerberosExpectedValues[$key])) {
+foreach ($entry in $kerberosExpectedValues) {
+  if (-not (Check-RegistryKey -path $kerberosRegPath -keyName $entry.KeyName -expectedValue $entry.Value)) {
     $remediationNeeded = $true
   }
 }
 
-# Exit status
+# Exit status based on the results
 if ($remediationNeeded) {
   Write-Log "Registry keys need remediation."
   Exit 1
